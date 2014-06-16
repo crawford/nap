@@ -22,6 +22,9 @@ type Wrapper interface {
 type DefaultWrapper struct{}
 
 func (w DefaultWrapper) Wrap(payload interface{}, status Status) interface{} {
+	if status == nil {
+		status = OK{}
+	}
 	return map[string]interface{}{
 		"status": map[string]interface{}{
 			"code":    status.Code(),
