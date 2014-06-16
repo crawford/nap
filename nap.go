@@ -37,6 +37,8 @@ func (f HandlerFunc) ServeHTTP(writer http.ResponseWriter, request *http.Request
 	payload, status := f(request)
 	result := DefaultWrapper{}.Wrap(payload, status)
 	if res, err := json.Marshal(result); err == nil {
+		writer.Header().Add("Content-Type", "application/json")
+		writer.Header().Add("Cache-Control", "no-cache,must-revalidate")
 		writer.WriteHeader(status.Code())
 		writer.Write(res)
 	} else {
