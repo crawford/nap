@@ -34,14 +34,21 @@ func (w DefaultWrapper) Wrap(payload interface{}, status Status) map[string]inte
 type HandlerFunc func(req *http.Request) (interface{}, Status)
 
 func (f HandlerFunc) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
-	payload, status := f(request)
-	result := DefaultWrapper{}.Wrap(payload, status)
-	if res, err := json.Marshal(result); err == nil {
-		writer.Header().Add("Content-Type", "application/json")
-		writer.Header().Add("Cache-Control", "no-cache,must-revalidate")
-		writer.WriteHeader(status.Code())
-		writer.Write(res)
-	} else {
-		writer.WriteHeader(http.StatusInternalServerError)
-	}
+	var payload interface{}
+	var status Status
+	defer func() {
+		if r := recover(); r != nil {
+			status = InternalError{}
+		}
+		result := DefaultWrapper{}.Wrap(payload, status)
+		if res, err := json.Marshal(result); err == nil {
+			writer.Header().Add("Content-Type", "application/json")
+			writer.Header().Add("Cache-Control", "no-cache,must-revalidate")
+			writer.WriteHeader(status.Code())
+			writer.Write(res)
+		} else {
+			writer.WriteHeader(http.StatusInternalServerError)
+		}
+	}()
+	payload, status = f(request)
 }
