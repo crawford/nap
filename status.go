@@ -10,67 +10,67 @@ type Status interface {
 }
 
 type OK struct {
-	message string
+	Msg string
 }
 
 func (s OK) Code() int {
 	return http.StatusOK
 }
 func (s OK) Message() string {
-	return s.message
+	return s.Msg
 }
 
 type Created struct {
-	message string
+	Msg string
 }
 
 func (s Created) Code() int {
 	return http.StatusCreated
 }
 func (s Created) Message() string {
-	return s.message
+	return s.Msg
 }
 
 type NotFound struct {
-	message string
+	Msg string
 }
 
 func (s NotFound) Code() int {
 	return http.StatusNotFound
 }
 func (s NotFound) Message() string {
-	return s.message
+	return s.Msg
 }
 
 type BadRequest struct {
-	message string
+	Msg string
 }
 
 func (s BadRequest) Code() int {
 	return http.StatusBadRequest
 }
 func (s BadRequest) Message() string {
-	return s.message
+	return s.Msg
 }
 
 type MethodNotAllowed struct {
-	message string
+	Msg string
 }
 
 func (s MethodNotAllowed) Code() int {
 	return http.StatusMethodNotAllowed
 }
 func (s MethodNotAllowed) Message() string {
-	return s.message
+	return s.Msg
 }
 
 type InternalError struct {
-	message string
+	Msg string
 }
 
 func (s InternalError) Code() int {
 	return http.StatusInternalServerError
 }
 func (s InternalError) Message() string {
-	return s.message
+	return s.Msg
 }

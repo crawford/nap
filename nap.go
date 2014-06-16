@@ -7,14 +7,10 @@ import (
 
 var (
 	MethodNotAllowedHandler = HandlerFunc(func(req *http.Request) (interface{}, Status) {
-		return nil, MethodNotAllowed{
-			message: "method not allowed on resource",
-		}
+		return nil, MethodNotAllowed{"method not allowed on resource"}
 	})
 	NotFoundHandler = HandlerFunc(func(req *http.Request) (interface{}, Status) {
-		return nil, NotFound{
-			message: "resource not found",
-		}
+		return nil, NotFound{"resource not found"}
 	})
 )
 
