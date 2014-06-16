@@ -38,18 +38,24 @@ func (f HandlerFunc) ServeHTTP(writer http.ResponseWriter, request *http.Request
 	var payload interface{}
 	var status Status
 	defer func() {
+		var result interface{}
+		defer func() {
+			writer.Header().Add("Content-Type", "application/json")
+			writer.Header().Add("Cache-Control", "no-cache,must-revalidate")
+
+			if r := recover(); r == nil {
+				if res, err := json.Marshal(result); err == nil {
+					writer.WriteHeader(status.Code())
+					writer.Write(res)
+					return
+				}
+			}
+			writer.WriteHeader(http.StatusInternalServerError)
+		}()
 		if r := recover(); r != nil {
 			status = InternalError{}
 		}
-		result := PayloadWrapper.Wrap(payload, status)
-		if res, err := json.Marshal(result); err == nil {
-			writer.Header().Add("Content-Type", "application/json")
-			writer.Header().Add("Cache-Control", "no-cache,must-revalidate")
-			writer.WriteHeader(status.Code())
-			writer.Write(res)
-		} else {
-			writer.WriteHeader(http.StatusInternalServerError)
-		}
+		result = PayloadWrapper.Wrap(payload, status)
 	}()
 	payload, status = f(request)
 }
