@@ -12,15 +12,16 @@ var (
 	NotFoundHandler = HandlerFunc(func(req *http.Request) (interface{}, Status) {
 		return nil, NotFound{"resource not found"}
 	})
+	PayloadWrapper Wrapper = DefaultWrapper{}
 )
 
 type Wrapper interface {
-	Wrap(payload json.Marshaler, status Status) json.Marshaler
+	Wrap(payload interface{}, status Status) interface{}
 }
 
 type DefaultWrapper struct{}
 
-func (w DefaultWrapper) Wrap(payload interface{}, status Status) map[string]interface{} {
+func (w DefaultWrapper) Wrap(payload interface{}, status Status) interface{} {
 	return map[string]interface{}{
 		"status": map[string]interface{}{
 			"code":    status.Code(),
@@ -40,7 +41,7 @@ func (f HandlerFunc) ServeHTTP(writer http.ResponseWriter, request *http.Request
 		if r := recover(); r != nil {
 			status = InternalError{}
 		}
-		result := DefaultWrapper{}.Wrap(payload, status)
+		result := PayloadWrapper.Wrap(payload, status)
 		if res, err := json.Marshal(result); err == nil {
 			writer.Header().Add("Content-Type", "application/json")
 			writer.Header().Add("Cache-Control", "no-cache,must-revalidate")
