@@ -6,12 +6,12 @@ import (
 )
 
 var (
-	MethodNotAllowedHandler = NapHandlerFunc(func() (interface{}, Status) {
+	MethodNotAllowedHandler = HandlerFunc(func(req *http.Request) (interface{}, Status) {
 		return nil, MethodNotAllowed{
 			message: "method not allowed on resource",
 		}
 	})
-	NotFoundHandler = NapHandlerFunc(func() (interface{}, Status) {
+	NotFoundHandler = HandlerFunc(func(req *http.Request) (interface{}, Status) {
 		return nil, NotFound{
 			message: "resource not found",
 		}
@@ -35,10 +35,10 @@ func (w DefaultWrapper) Wrap(payload interface{}, status Status) map[string]inte
 
 }
 
-type NapHandlerFunc func() (interface{}, Status)
+type HandlerFunc func(req *http.Request) (interface{}, Status)
 
-func (f NapHandlerFunc) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
-	payload, status := f()
+func (f HandlerFunc) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
+	payload, status := f(request)
 	result := DefaultWrapper{}.Wrap(payload, status)
 	if res, err := json.Marshal(result); err == nil {
 		writer.WriteHeader(status.Code())
