@@ -1,0 +1,17 @@
+language: go
+
+go:
+  - 1.2
+
+env:
+  global:
+    - secure: "BjHH2/yGCkF/Ya7Sl7JqmS51U6632evsPwroIx3XvJpWtXT+eBCY8jDw6rHiTNwm9Yh6p9B+KHeQ0F5lUarK4i5Xf2riA46jrTgm9oZyihwmlgHNbwc+D3a62N7m++njLwQjI0KWNz/Kyyddi6pkej7ThzSMgQ6/d5r0OMz40q0="
+    - PATH=$PATH:$HOME/gopath/bin
+
+install:
+  - go get code.google.com/p/go.tools/cmd/cover
+  - go get github.com/mattn/goveralls
+
+script:
+  - go test -cover -coverprofile=profile.cov
+  - goveralls -coverprofile=profile.cov -service=travis-ci -repotoken $COVERALLS_TOKEN
