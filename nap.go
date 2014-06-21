@@ -6,13 +6,9 @@ import (
 )
 
 var (
-	MethodNotAllowedHandler = HandlerFunc(func(req *http.Request) (interface{}, Status) {
-		return nil, MethodNotAllowed{"method not allowed on resource"}
-	})
-	NotFoundHandler = HandlerFunc(func(req *http.Request) (interface{}, Status) {
-		return nil, NotFound{"resource not found"}
-	})
-	PayloadWrapper Wrapper = DefaultWrapper{}
+	MethodNotAllowedHandler HandlerFunc = HandlerFunc(defaultMethodNotAllowed)
+	NotFoundHandler         HandlerFunc = HandlerFunc(defaultNotFound)
+	PayloadWrapper          Wrapper     = DefaultWrapper{}
 )
 
 type Wrapper interface {
@@ -61,4 +57,12 @@ func (f HandlerFunc) ServeHTTP(writer http.ResponseWriter, request *http.Request
 		result = PayloadWrapper.Wrap(payload, status)
 	}()
 	payload, status = f(request)
+}
+
+func defaultMethodNotAllowed(req *http.Request) (interface{}, Status) {
+	return nil, MethodNotAllowed{"method not allowed on resource"}
+}
+
+func defaultNotFound(req *http.Request) (interface{}, Status) {
+	return nil, NotFound{"resource not found"}
 }
