@@ -2,6 +2,7 @@ package nap
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"reflect"
 	"testing"
 )
@@ -109,4 +110,21 @@ func TestDefaultWrapper(t *testing.T) {
 			t.Fatalf("bad result (%q, %q): got %q, want %q", test.payload, test.status, result, test.result)
 		}
 	}
+}
+
+func TestHandlerFuncPanic(t *testing.T) {
+	writer := httptest.NewRecorder()
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("unexpected panic: %q", r)
+		}
+		if writer.Code != http.StatusInternalServerError {
+			t.Fatalf("bad code: got %d, want %d", writer.Code, http.StatusInternalServerError)
+		}
+	}()
+
+	HandlerFunc(func(*http.Request) (interface{}, Status) {
+		panic("")
+	}).ServeHTTP(writer, nil)
 }
