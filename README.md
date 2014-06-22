@@ -10,7 +10,7 @@ Simple, and I mean simple, REST framework for JSON-based responses.
 
 Here is a dead-simple REST API.
 
-```
+```go
 package main
 
 import (
@@ -31,7 +31,7 @@ func main() {
 
 And here it is in action!
 
-```
+```json
 {
 	"result": "Hello, World!",
 	"status": {
@@ -41,7 +41,7 @@ And here it is in action!
 }
 ```
 
-```
+```json
 {
 	"result": null,
 	"status": {
@@ -55,7 +55,7 @@ And here it is in action!
 
 Here is a more interesting example. This pattern is useful for injecting extra parameters into your handlers.
 
-```
+```go
 package main
 
 import (
@@ -93,7 +93,7 @@ func main() {
 
 And the result!
 
-```
+```json
 {
     "result": {
         "Url": {
@@ -119,7 +119,7 @@ And the result!
 
 Not a very good programmer?
 
-```
+```go
 package main
 
 import (
@@ -140,7 +140,7 @@ func main() {
 
 Nice save!
 
-```
+```json
 {
     "result": null,
     "status": {
