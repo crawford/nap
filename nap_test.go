@@ -128,3 +128,28 @@ func TestHandlerFuncPanic(t *testing.T) {
 		panic("")
 	}).ServeHTTP(writer, nil)
 }
+
+type PanicWrapper struct{}
+
+func (w PanicWrapper) Wrap(payload interface{}, status Status) (interface{}, int) {
+	panic("")
+}
+
+func TestHandlerFuncWrapperPanic(t *testing.T) {
+	PayloadWrapper = PanicWrapper{}
+
+	writer := httptest.NewRecorder()
+
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("unexpected panic: %q", r)
+		}
+		if writer.Code != http.StatusInternalServerError {
+			t.Fatalf("bad code: got %d, want %d", writer.Code, http.StatusInternalServerError)
+		}
+	}()
+
+	HandlerFunc(func(*http.Request) (interface{}, Status) {
+		return nil, nil
+	}).ServeHTTP(writer, nil)
+}
