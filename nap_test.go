@@ -38,6 +38,7 @@ func TestDefaultWrapper(t *testing.T) {
 		payload interface{}
 		status  Status
 		result  interface{}
+		code    int
 	}{
 		{
 			payload: nil,
@@ -49,6 +50,7 @@ func TestDefaultWrapper(t *testing.T) {
 				},
 				"result": nil,
 			},
+			code: http.StatusOK,
 		},
 		{
 			payload: nil,
@@ -60,6 +62,7 @@ func TestDefaultWrapper(t *testing.T) {
 				},
 				"result": nil,
 			},
+			code: http.StatusOK,
 		},
 		{
 			payload: nil,
@@ -71,6 +74,7 @@ func TestDefaultWrapper(t *testing.T) {
 				},
 				"result": nil,
 			},
+			code: http.StatusOK,
 		},
 		{
 			payload: nil,
@@ -82,6 +86,7 @@ func TestDefaultWrapper(t *testing.T) {
 				},
 				"result": nil,
 			},
+			code: http.StatusNotFound,
 		},
 		{
 			payload: "test",
@@ -93,9 +98,13 @@ func TestDefaultWrapper(t *testing.T) {
 				},
 				"result": "test",
 			},
+			code: http.StatusOK,
 		},
 	} {
-		result := DefaultWrapper{}.Wrap(test.payload, test.status)
+		result, code := DefaultWrapper{}.Wrap(test.payload, test.status)
+		if code != test.code {
+			t.Fatalf("bad code (%q, %q): got %d, want %d", test.payload, test.status, code, test.code)
+		}
 		if !reflect.DeepEqual(result, test.result) {
 			t.Fatalf("bad result (%q, %q): got %q, want %q", test.payload, test.status, result, test.result)
 		}

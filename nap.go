@@ -12,12 +12,12 @@ var (
 )
 
 type Wrapper interface {
-	Wrap(payload interface{}, status Status) interface{}
+	Wrap(payload interface{}, status Status) (interface{}, int)
 }
 
 type DefaultWrapper struct{}
 
-func (w DefaultWrapper) Wrap(payload interface{}, status Status) interface{} {
+func (w DefaultWrapper) Wrap(payload interface{}, status Status) (interface{}, int) {
 	if status == nil {
 		status = OK{}
 	}
@@ -27,7 +27,7 @@ func (w DefaultWrapper) Wrap(payload interface{}, status Status) interface{} {
 			"message": status.Message(),
 		},
 		"result": payload,
-	}
+	}, status.Code()
 
 }
 
@@ -38,13 +38,14 @@ func (f HandlerFunc) ServeHTTP(writer http.ResponseWriter, request *http.Request
 	var status Status
 	defer func() {
 		var result interface{}
+		var code int
 		defer func() {
 			writer.Header().Add("Content-Type", "application/json")
 			writer.Header().Add("Cache-Control", "no-cache,must-revalidate")
 
 			if r := recover(); r == nil {
 				if res, err := json.Marshal(result); err == nil {
-					writer.WriteHeader(status.Code())
+					writer.WriteHeader(code)
 					writer.Write(res)
 					return
 				}
@@ -54,7 +55,7 @@ func (f HandlerFunc) ServeHTTP(writer http.ResponseWriter, request *http.Request
 		if r := recover(); r != nil {
 			status = InternalError{}
 		}
-		result = PayloadWrapper.Wrap(payload, status)
+		result, code = PayloadWrapper.Wrap(payload, status)
 	}()
 	payload, status = f(request)
 }
