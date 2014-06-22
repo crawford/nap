@@ -112,44 +112,67 @@ func TestDefaultWrapper(t *testing.T) {
 	}
 }
 
-func TestHandlerFuncPanic(t *testing.T) {
-	writer := httptest.NewRecorder()
-
-	defer func() {
-		if r := recover(); r != nil {
-			t.Fatalf("unexpected panic: %q", r)
-		}
-		if writer.Code != http.StatusInternalServerError {
-			t.Fatalf("bad code: got %d, want %d", writer.Code, http.StatusInternalServerError)
-		}
-	}()
-
-	HandlerFunc(func(*http.Request) (interface{}, Status) {
-		panic("")
-	}).ServeHTTP(writer, nil)
-}
-
 type PanicWrapper struct{}
 
 func (w PanicWrapper) Wrap(payload interface{}, status Status) (interface{}, int) {
 	panic("")
 }
 
-func TestHandlerFuncWrapperPanic(t *testing.T) {
-	PayloadWrapper = PanicWrapper{}
-
-	writer := httptest.NewRecorder()
-
-	defer func() {
-		if r := recover(); r != nil {
-			t.Fatalf("unexpected panic: %q", r)
-		}
-		if writer.Code != http.StatusInternalServerError {
-			t.Fatalf("bad code: got %d, want %d", writer.Code, http.StatusInternalServerError)
-		}
-	}()
-
-	HandlerFunc(func(*http.Request) (interface{}, Status) {
-		return nil, nil
-	}).ServeHTTP(writer, nil)
+func TestHandlerFunc(t *testing.T) {
+	for _, test := range []struct {
+		wrapper Wrapper
+		handler HandlerFunc
+		code    int
+		body    string
+	}{
+		{
+			wrapper: DefaultWrapper{},
+			handler: HandlerFunc(func(*http.Request) (interface{}, Status) {
+				panic("")
+			}),
+			code: http.StatusInternalServerError,
+			body: `{"result":null,"status":{"code":500,"message":""}}`,
+		},
+		{
+			wrapper: PanicWrapper{},
+			handler: HandlerFunc(func(*http.Request) (interface{}, Status) {
+				return nil, nil
+			}),
+			code: http.StatusInternalServerError,
+			body: ``,
+		},
+		{
+			wrapper: DefaultWrapper{},
+			handler: HandlerFunc(func(*http.Request) (interface{}, Status) {
+				return nil, NotFound{}
+			}),
+			code: http.StatusNotFound,
+			body: `{"result":null,"status":{"code":404,"message":""}}`,
+		},
+		{
+			wrapper: DefaultWrapper{},
+			handler: HandlerFunc(func(*http.Request) (interface{}, Status) {
+				return "testing", OK{"test"}
+			}),
+			code: http.StatusOK,
+			body: `{"result":"testing","status":{"code":200,"message":"test"}}`,
+		},
+	} {
+		func() {
+			writer := httptest.NewRecorder()
+			defer func() {
+				if r := recover(); r != nil {
+					t.Fatalf("unexpected panic: %q", r)
+				}
+				if writer.Code != test.code {
+					t.Fatalf("bad code: got %d, want %d", writer.Code, test.code)
+				}
+				if writer.Body.String() != test.body {
+					t.Fatalf("bad body: got %q, want %q", writer.Body.String(), test.body)
+				}
+			}()
+			PayloadWrapper = test.wrapper
+			test.handler.ServeHTTP(writer, nil)
+		}()
+	}
 }
