@@ -21,14 +21,7 @@ func (w DefaultWrapper) Wrap(payload interface{}, status Status) (interface{}, i
 	if status == nil {
 		status = OK{}
 	}
-	return map[string]interface{}{
-		"status": map[string]interface{}{
-			"code":    status.Code(),
-			"message": status.Message(),
-		},
-		"result": payload,
-	}, status.Code()
-
+	return payload, status.Code()
 }
 
 type HandlerFunc func(req *http.Request) (interface{}, Status)

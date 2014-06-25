@@ -44,61 +44,31 @@ func TestDefaultWrapper(t *testing.T) {
 		{
 			payload: nil,
 			status:  nil,
-			result: map[string]interface{}{
-				"status": map[string]interface{}{
-					"code":    http.StatusOK,
-					"message": "",
-				},
-				"result": nil,
-			},
+			result: nil,
 			code: http.StatusOK,
 		},
 		{
 			payload: nil,
 			status:  OK{},
-			result: map[string]interface{}{
-				"status": map[string]interface{}{
-					"code":    http.StatusOK,
-					"message": "",
-				},
-				"result": nil,
-			},
+			result: nil,
 			code: http.StatusOK,
 		},
 		{
 			payload: nil,
 			status:  OK{"test"},
-			result: map[string]interface{}{
-				"status": map[string]interface{}{
-					"code":    http.StatusOK,
-					"message": "test",
-				},
-				"result": nil,
-			},
+			result: nil,
 			code: http.StatusOK,
 		},
 		{
 			payload: nil,
 			status:  NotFound{},
-			result: map[string]interface{}{
-				"status": map[string]interface{}{
-					"code":    http.StatusNotFound,
-					"message": "",
-				},
-				"result": nil,
-			},
+			result: nil,
 			code: http.StatusNotFound,
 		},
 		{
 			payload: "test",
 			status:  nil,
-			result: map[string]interface{}{
-				"status": map[string]interface{}{
-					"code":    http.StatusOK,
-					"message": "",
-				},
-				"result": "test",
-			},
+			result: "test",
 			code: http.StatusOK,
 		},
 	} {
@@ -131,7 +101,7 @@ func TestHandlerFunc(t *testing.T) {
 				panic("")
 			}),
 			code: http.StatusInternalServerError,
-			body: `{"result":null,"status":{"code":500,"message":""}}`,
+			body: `null`,
 		},
 		{
 			wrapper: PanicWrapper{},
@@ -147,7 +117,7 @@ func TestHandlerFunc(t *testing.T) {
 				return nil, NotFound{}
 			}),
 			code: http.StatusNotFound,
-			body: `{"result":null,"status":{"code":404,"message":""}}`,
+			body: `null`,
 		},
 		{
 			wrapper: DefaultWrapper{},
@@ -155,7 +125,7 @@ func TestHandlerFunc(t *testing.T) {
 				return "testing", OK{"test"}
 			}),
 			code: http.StatusOK,
-			body: `{"result":"testing","status":{"code":200,"message":"test"}}`,
+			body: `"testing"`,
 		},
 	} {
 		func() {
