@@ -9,6 +9,7 @@ var (
 	MethodNotAllowedHandler HandlerFunc = HandlerFunc(defaultMethodNotAllowed)
 	NotFoundHandler         HandlerFunc = HandlerFunc(defaultNotFound)
 	PayloadWrapper          Wrapper     = DefaultWrapper{}
+	ResponseHeaders         []Header    = defaultHeaders
 )
 
 type Wrapper interface {
@@ -24,6 +25,11 @@ func (w DefaultWrapper) Wrap(payload interface{}, status Status) (interface{}, i
 	return payload, status.Code()
 }
 
+type Header struct {
+	Name  string
+	Value []string
+}
+
 type HandlerFunc func(req *http.Request) (interface{}, Status)
 
 func (f HandlerFunc) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
@@ -33,8 +39,9 @@ func (f HandlerFunc) ServeHTTP(writer http.ResponseWriter, request *http.Request
 		var result interface{}
 		var code int
 		defer func() {
-			writer.Header().Add("Content-Type", "application/json")
-			writer.Header().Add("Cache-Control", "no-cache,must-revalidate")
+			for _, header := range ResponseHeaders {
+				writer.Header()[header.Name] = header.Value
+			}
 
 			if r := recover(); r == nil {
 				if res, err := json.Marshal(result); err == nil {
@@ -52,6 +59,13 @@ func (f HandlerFunc) ServeHTTP(writer http.ResponseWriter, request *http.Request
 	}()
 	payload, status = f(request)
 }
+
+var (
+	defaultHeaders = []Header{
+		{"Content-Type", []string{"application/json"}},
+		{"Cache-Control", []string{"no-cache,must-revalidate"}},
+	}
+)
 
 func defaultMethodNotAllowed(req *http.Request) (interface{}, Status) {
 	return nil, MethodNotAllowed{"method not allowed on resource"}

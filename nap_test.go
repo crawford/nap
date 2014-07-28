@@ -44,32 +44,32 @@ func TestDefaultWrapper(t *testing.T) {
 		{
 			payload: nil,
 			status:  nil,
-			result: nil,
-			code: http.StatusOK,
+			result:  nil,
+			code:    http.StatusOK,
 		},
 		{
 			payload: nil,
 			status:  OK{},
-			result: nil,
-			code: http.StatusOK,
+			result:  nil,
+			code:    http.StatusOK,
 		},
 		{
 			payload: nil,
 			status:  OK{"test"},
-			result: nil,
-			code: http.StatusOK,
+			result:  nil,
+			code:    http.StatusOK,
 		},
 		{
 			payload: nil,
 			status:  NotFound{},
-			result: nil,
-			code: http.StatusNotFound,
+			result:  nil,
+			code:    http.StatusNotFound,
 		},
 		{
 			payload: "test",
 			status:  nil,
-			result: "test",
-			code: http.StatusOK,
+			result:  "test",
+			code:    http.StatusOK,
 		},
 	} {
 		result, code := DefaultWrapper{}.Wrap(test.payload, test.status)
@@ -79,6 +79,45 @@ func TestDefaultWrapper(t *testing.T) {
 		if !reflect.DeepEqual(result, test.result) {
 			t.Fatalf("bad result (%q, %q): got %q, want %q", test.payload, test.status, result, test.result)
 		}
+	}
+}
+
+func TestHeaders(t *testing.T) {
+	for _, test := range []struct {
+		headers []Header
+	}{
+		{
+			headers: nil,
+		},
+		{
+			headers: []Header{},
+		},
+		{
+			headers: defaultHeaders,
+		},
+	} {
+		handler := HandlerFunc(func(*http.Request) (interface{}, Status) {
+			return nil, nil
+		})
+		func() {
+			writer := httptest.NewRecorder()
+			defer func() {
+				if r := recover(); r != nil {
+					t.Fatalf("unexpected panic: %q", r)
+				}
+				for _, header := range test.headers {
+					if !reflect.DeepEqual(writer.Header()[header.Name], header.Value) {
+						t.Fatalf("bad header: got %q, want %q", writer.Header()[header.Name], header.Value)
+					}
+					delete(writer.Header(), header.Name)
+				}
+				if len(writer.Header()) > 0 {
+					t.Fatalf("extra headers: got %d, want %d", len(writer.Header()), 0)
+				}
+			}()
+			ResponseHeaders = test.headers
+			handler.ServeHTTP(writer, nil)
+		}()
 	}
 }
 
