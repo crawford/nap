@@ -6,14 +6,19 @@ import (
 )
 
 var (
-	MethodNotAllowedHandler HandlerFunc = HandlerFunc(defaultMethodNotAllowed)
-	NotFoundHandler         HandlerFunc = HandlerFunc(defaultNotFound)
-	PayloadWrapper          Wrapper     = DefaultWrapper{}
-	ResponseHeaders         []Header    = defaultHeaders
+	MethodNotAllowedHandler HandlerFunc  = HandlerFunc(defaultMethodNotAllowed)
+	NotFoundHandler         HandlerFunc  = HandlerFunc(defaultNotFound)
+	PayloadWrapper          Wrapper      = DefaultWrapper{}
+	PanicHandler            ErrorHandler = nil
+	ResponseHeaders         []Header     = defaultHeaders
 )
 
 type Wrapper interface {
 	Wrap(payload interface{}, status Status) (interface{}, int)
+}
+
+type ErrorHandler interface {
+	Handle(e interface{})
 }
 
 type DefaultWrapper struct{}
@@ -43,7 +48,9 @@ func (f HandlerFunc) ServeHTTP(writer http.ResponseWriter, request *http.Request
 				writer.Header()[header.Name] = header.Value
 			}
 
-			if r := recover(); r == nil {
+			if r := recover(); r != nil {
+				handlePanic(r)
+			} else {
 				if res, err := json.Marshal(result); err == nil {
 					writer.WriteHeader(code)
 					writer.Write(res)
@@ -53,11 +60,23 @@ func (f HandlerFunc) ServeHTTP(writer http.ResponseWriter, request *http.Request
 			writer.WriteHeader(http.StatusInternalServerError)
 		}()
 		if r := recover(); r != nil {
+			handlePanic(r)
 			status = InternalError{}
 		}
 		result, code = PayloadWrapper.Wrap(payload, status)
 	}()
 	payload, status = f(request)
+}
+
+func handlePanic(r interface{}) {
+	if PanicHandler != nil {
+		func() {
+			defer func() {
+				recover()
+			}()
+			PanicHandler.Handle(r)
+		}()
+	}
 }
 
 var (

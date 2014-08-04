@@ -185,3 +185,86 @@ func TestHandlerFunc(t *testing.T) {
 		}()
 	}
 }
+
+type PanicRecorder struct {
+	Panic     bool
+	LastPanic interface{}
+}
+
+func (p *PanicRecorder) Handle(e interface{}) {
+	p.LastPanic = e
+	if p.Panic {
+		panic("test panic")
+	}
+}
+
+func TestPanicHandler(t *testing.T) {
+	okHandler := HandlerFunc(func(req *http.Request) (interface{}, Status) {
+		return nil, nil
+	})
+	panicHandler := HandlerFunc(func(req *http.Request) (interface{}, Status) {
+		panic("test panic")
+	})
+
+	for i, test := range []struct {
+		wrapper     Wrapper
+		handler     HandlerFunc
+		panicHook   *PanicRecorder
+		shouldPanic bool
+	}{
+		{
+			wrapper: DefaultWrapper{},
+			handler: okHandler,
+		},
+		{
+			wrapper:     DefaultWrapper{},
+			handler:     okHandler,
+			panicHook:   &PanicRecorder{},
+			shouldPanic: false,
+		},
+		{
+			wrapper:     PanicWrapper{},
+			handler:     okHandler,
+			panicHook:   &PanicRecorder{},
+			shouldPanic: true,
+		},
+		{
+			wrapper:     DefaultWrapper{},
+			handler:     panicHandler,
+			panicHook:   &PanicRecorder{},
+			shouldPanic: true,
+		},
+		{
+			wrapper:     PanicWrapper{},
+			handler:     panicHandler,
+			panicHook:   &PanicRecorder{},
+			shouldPanic: true,
+		},
+		{
+			wrapper:   DefaultWrapper{},
+			handler:   okHandler,
+			panicHook: nil,
+		},
+		{
+			wrapper:     PanicWrapper{},
+			handler:     panicHandler,
+			panicHook:   &PanicRecorder{Panic: true},
+			shouldPanic: true,
+		},
+	} {
+		func() {
+			writer := httptest.NewRecorder()
+			defer func() {
+				if r := recover(); r != nil {
+					t.Fatalf("unexpected panic: %q", r)
+				}
+				if test.panicHook != nil && (test.panicHook.LastPanic != nil) != test.shouldPanic {
+					t.Fatalf("bad panic (%d): got %q, want %q", i, (test.panicHook.LastPanic != nil), test.shouldPanic)
+				}
+			}()
+			PayloadWrapper = test.wrapper
+			PanicHandler = test.panicHook
+			test.handler.ServeHTTP(writer, nil)
+		}()
+	}
+}
