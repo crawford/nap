@@ -1,10 +1,11 @@
 package main
 
 import (
-	"github.com/crawford/nap"
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/crawford/nap"
 )
 
 func Info(now time.Time, req *http.Request) (interface{}, nap.Status) {

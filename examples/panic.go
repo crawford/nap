@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/crawford/nap"
 	"net/http"
+
+	"github.com/crawford/nap"
 )
 
 func Panic(req *http.Request) (interface{}, nap.Status) {

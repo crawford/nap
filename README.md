@@ -14,8 +14,9 @@ Here is a dead-simple REST API.
 package main
 
 import (
-	"github.com/crawford/nap"
 	"net/http"
+
+	"github.com/crawford/nap"
 )
 
 func Hello(req *http.Request) (interface{}, nap.Status) {
@@ -31,6 +32,58 @@ func main() {
 
 And here it is in action!
 
+`curl localhost:8080/hello`
+```json
+{
+	"Hello, World!"
+}
+```
+
+`curl localhost:8080/bye`
+```json
+null
+```
+
+###Custom Wrapper###
+
+It's also possible to customize the response from Nap.
+
+```go
+package main
+
+import (
+	"net/http"
+
+	"github.com/crawford/nap"
+)
+
+type payloadWrapper struct{}
+
+func (w payloadWrapper) Wrap(payload interface{}, status nap.Status) (interface{}, int) {
+	return map[string]interface{}{
+		"status": map[string]interface{}{
+			"code":    status.Code(),
+			"message": status.Message(),
+		},
+		"result": payload,
+	}, status.Code()
+}
+
+func Hello(req *http.Request) (interface{}, nap.Status) {
+	return "Hello, World!", nap.OK{}
+}
+
+func main() {
+	http.Handle("/hello", nap.HandlerFunc(Hello))
+	http.Handle("/", nap.NotFoundHandler)
+	http.ListenAndServe(":8080", nil)
+}
+```
+
+And here it is in action!
+
+`curl localhost:8080/hello`
+
 ```json
 {
 	"result": "Hello, World!",
@@ -41,6 +94,7 @@ And here it is in action!
 }
 ```
 
+`curl localhost:8080/bye`
 ```json
 {
 	"result": null,
@@ -59,34 +113,35 @@ Here is a more interesting example. This pattern is useful for injecting extra p
 package main
 
 import (
-        "github.com/crawford/nap"
-        "net/http"
-        "net/url"
-        "time"
+	"net/http"
+	"net/url"
+	"time"
+
+	"github.com/crawford/nap"
 )
 
 func Info(now time.Time, req *http.Request) (interface{}, nap.Status) {
-        return struct {
-                Url  *url.URL
-                Host string
-                Time time.Time
-        }{
-                Url:  req.URL,
-                Host: req.Host,
-                Time: now,
-        }, nap.OK{}
+	return struct {
+		Url  *url.URL
+		Host string
+		Time time.Time
+	}{
+		Url:  req.URL,
+		Host: req.Host,
+		Time: now,
+	}, nap.OK{}
 }
 
 func AddTimestamp(fn func(time.Time, *http.Request) (interface{}, nap.Status)) http.Handler {
-        return nap.HandlerFunc(func(req *http.Request) (interface{}, nap.Status) {
-                return fn(time.Now(), req)
-        })
+	return nap.HandlerFunc(func(req *http.Request) (interface{}, nap.Status) {
+		return fn(time.Now(), req)
+	})
 }
 
 func main() {
-        http.Handle("/info", AddTimestamp(Info))
-        http.Handle("/", nap.NotFoundHandler)
-        http.ListenAndServe(":8080", nil)
+	http.Handle("/info", AddTimestamp(Info))
+	http.Handle("/", nap.NotFoundHandler)
+	http.ListenAndServe(":8080", nil)
 }
 
 ```
@@ -95,23 +150,17 @@ And the result!
 
 ```json
 {
-    "result": {
-        "Url": {
-            "Scheme": "",
-            "Opaque": "",
-            "User": null,
-            "Host": "",
-            "Path": "/info",
-            "RawQuery": "",
-            "Fragment": ""
-        },
-        "Host": "localhost:8080",
-        "Time": "2014-06-21T23:26:09.002024789-07:00"
-    },
-    "status": {
-        "code": 200,
-        "message": ""
-    }
+	"Url": {
+		"Scheme": "",
+		"Opaque": "",
+		"User": null,
+		"Host": "",
+		"Path": "/info",
+		"RawQuery": "",
+		"Fragment": ""
+	},
+	"Host": "localhost:8080",
+	"Time": "2014-06-21T23:26:09.002024789-07:00"
 }
 ```
 
@@ -123,29 +172,24 @@ Not a very good programmer?
 package main
 
 import (
-        "github.com/crawford/nap"
-        "net/http"
+	"net/http"
+
+	"github.com/crawford/nap"
 )
 
 func Panic(req *http.Request) (interface{}, nap.Status) {
-        panic("AHH")
+	panic("AHH")
 }
 
 func main() {
-        http.Handle("/panic", nap.HandlerFunc(Panic))
-        http.Handle("/", nap.NotFoundHandler)
-        http.ListenAndServe(":8080", nil)
+	http.Handle("/panic", nap.HandlerFunc(Panic))
+	http.Handle("/", nap.NotFoundHandler)
+	http.ListenAndServe(":8080", nil)
 }
 ```
 
 Nice save!
 
 ```json
-{
-    "result": null,
-    "status": {
-        "code": 500,
-        "message": ""
-    }
-}
+null
 ```
